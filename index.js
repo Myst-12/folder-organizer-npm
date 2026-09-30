@@ -21,6 +21,8 @@ function organize(folderPath) {
             for (const category in categories) {
                 if (categories[category].includes(extension)) {
                     const folder = path.join(folderPath, category)
+                    const oldPath = path.join(folderPath, file)
+                    const newPath = path.join(folder, file)
 
                     fs.mkdir(folder, { recursive: true }, (err) => {
                         if (err) {
@@ -28,7 +30,14 @@ function organize(folderPath) {
                             return
                         }
 
-                        console.log(`${category} folder ready`)
+                        fs.rename(oldPath, newPath, (err) => {
+                            if (err) {
+                                console.log("Error moving file:", err.message)
+                                return
+                            }
+
+                            console.log(`${file} -> ${category}`)
+                        })
                     })
 
                     break
