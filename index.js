@@ -9,40 +9,49 @@ const categories = {
 }
 
 function organize(folderPath) {
-    fs.readdir(folderPath, (err, files) => {
+    fs.readdir(folderPath, { withFileTypes: true }, (err, files) => {
         if (err) {
             console.log("Error reading folder:", err.message)
             return
         }
 
         files.forEach(file => {
-            const extension = path.extname(file).toLowerCase()
 
-            for (const category in categories) {
-                if (categories[category].includes(extension)) {
-                    const folder = path.join(folderPath, category)
-                    const oldPath = path.join(folderPath, file)
-                    const newPath = path.join(folder, file)
+            if (file.isDirectory()) {
+                return
+            }
 
-                    fs.mkdir(folder, { recursive: true }, (err) => {
-                        if (err) {
-                            console.log("Error creating folder:", err.message)
-                            return
-                        }
+            const fileName = file.name
+            const extension = path.extname(fileName).toLowerCase()
 
-                        fs.rename(oldPath, newPath, (err) => {
-                            if (err) {
-                                console.log("Error moving file:", err.message)
-                                return
-                            }
+            let category = "Others"
 
-                            console.log(`${file} -> ${category}`)
-                        })
-                    })
-
+            for (const currentCategory in categories) {
+                if (categories[currentCategory].includes(extension)) {
+                    category = currentCategory
                     break
                 }
             }
+
+            const folder = path.join(folderPath, category)
+            const oldPath = path.join(folderPath, fileName)
+            const newPath = path.join(folder, fileName)
+
+            fs.mkdir(folder, { recursive: true }, (err) => {
+                if (err) {
+                    console.log("Error creating folder:", err.message)
+                    return
+                }
+
+                fs.rename(oldPath, newPath, (err) => {
+                    if (err) {
+                        console.log("Error moving file:", err.message)
+                        return
+                    }
+
+                    console.log(`${fileName} -> ${category}`)
+                })
+            })
         })
     })
 }
