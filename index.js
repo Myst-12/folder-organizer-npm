@@ -1,4 +1,4 @@
-const fs = require("fs")
+const fs = require("fs/promises")
 const path = require("path")
 
 const categories = {
@@ -8,52 +8,43 @@ const categories = {
     Code: [".js", ".py", ".html", ".css"]
 }
 
-function organize(folderPath) {
-    fs.readdir(folderPath, { withFileTypes: true }, (err, files) => {
-        if (err) {
-            console.log("Error reading folder:", err.message)
-            return
+function getCategory(fileName) {
+    const extension = path.extname(fileName).toLowerCase()
+
+    for (const category in categories) {
+        if (categories[category].includes(extension)) {
+            return category
+        }
+    }
+
+    return "Others"
+}
+
+async function organize(folderPath, options = {}) {
+    const preview = options.preview === true
+    const files = await fs.readdir(folderPath, { withFileTypes: true })
+    const moves = []
+
+    for (const file of files) {
+        if (file.isDirectory()) {
+            continue
         }
 
-        files.forEach(file => {
+        const fileName = file.name
+        const category = getCategory(fileName)
 
-            if (file.isDirectory()) {
-                return
-            }
-
-            const fileName = file.name
-            const extension = path.extname(fileName).toLowerCase()
-
-            let category = "Others"
-
-            for (const currentCategory in categories) {
-                if (categories[currentCategory].includes(extension)) {
-                    category = currentCategory
-                    break
-                }
-            }
-
+        // in preview mode we only record the move, nothing is touched
+        if (!preview) {
             const folder = path.join(folderPath, category)
-            const oldPath = path.join(folderPath, fileName)
-            const newPath = path.join(folder, fileName)
+            await fs.mkdir(folder, { recursive: true })
+            await fs.rename(path.join(folderPath, fileName), path.join(folder, fileName))
+        }
 
-            fs.mkdir(folder, { recursive: true }, (err) => {
-                if (err) {
-                    console.log("Error creating folder:", err.message)
-                    return
-                }
+        moves.push({ file: fileName, category: category })
+        console.log(`${preview ? "[preview] " : ""}${fileName} -> ${category}`)
+    }
 
-                fs.rename(oldPath, newPath, (err) => {
-                    if (err) {
-                        console.log("Error moving file:", err.message)
-                        return
-                    }
-
-                    console.log(`${fileName} -> ${category}`)
-                })
-            })
-        })
-    })
+    return moves
 }
 
 module.exports = organize
