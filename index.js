@@ -126,12 +126,10 @@ async function organize(folderPath, options = {}) {
         // count how many files go into each category
         result.categories[category] = (result.categories[category] || 0) + 1
         result.files.push({ file: fileName, category: category, newName: newName })
-
-        const renamed = newName !== fileName ? ` (renamed to ${newName})` : ""
-        console.log(`${preview ? "[preview] " : ""}${fileName} -> ${category}${renamed}`)
     }
 
     return result
 }
 
 module.exports = organize
+module.exports.defaultRules = defaultRules
