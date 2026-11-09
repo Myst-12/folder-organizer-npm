@@ -91,13 +91,24 @@ async function organize(folderPath, options = {}) {
     const preview = options.preview === true
     const rules = options.rules ? cleanRules(options.rules) : defaultRules
     const files = await fs.readdir(folderPath, { withFileTypes: true })
-    const moves = []
+
+    const result = {
+        total: 0,
+        moved: 0,
+        skipped: 0,
+        preview: preview,
+        categories: {},
+        files: []
+    }
 
     for (const file of files) {
         // skip folders, shortcuts and hidden files like .DS_Store
         if (!file.isFile() || file.name.startsWith(".")) {
+            result.skipped++
             continue
         }
+
+        result.total++
 
         const fileName = file.name
         const category = getCategory(fileName, rules)
@@ -109,15 +120,18 @@ async function organize(folderPath, options = {}) {
         if (!preview) {
             await fs.mkdir(folder, { recursive: true })
             await fs.rename(path.join(folderPath, fileName), newPath)
+            result.moved++
         }
 
-        moves.push({ file: fileName, category: category, newName: newName })
+        // count how many files go into each category
+        result.categories[category] = (result.categories[category] || 0) + 1
+        result.files.push({ file: fileName, category: category, newName: newName })
 
         const renamed = newName !== fileName ? ` (renamed to ${newName})` : ""
         console.log(`${preview ? "[preview] " : ""}${fileName} -> ${category}${renamed}`)
     }
 
-    return moves
+    return result
 }
 
 module.exports = organize
